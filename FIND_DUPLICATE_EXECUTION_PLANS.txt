@@ -1,0 +1,9 @@
+select distinct sql_id,plan_hash_value,parsing_schema_name from gv$sql where sql_id in(select  sql_id from 
+(SELECT   DISTINCT SQL_ID,plan_hash_value FROM gv$sql where
+parsing_schema_name not in('SYS','SYSTEM','DBSNMP','DATAPUMP_USER','SYSMAN','XDB','CTXSYS','DBMS_WORKLOAD_REPOSITORY','DBMS_SQLTUNE')
+and upper(substr(parsing_schema_name,1,1))<>'C'
+and inst_id=1
+group by sql_id,plan_hash_value)
+group by sql_id
+having count(*)>=2)
+;
