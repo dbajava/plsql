@@ -1,0 +1,10 @@
+@/home/oracle/scripts/set_markup.sql
+SPOOL /tmp/dailyrpt.log
+SET FEEDBACK OFF
+REPHEADER PAGE CENTER '<h2>DAILY ORACLE REPORT</h2>' SKIP 2
+select to_char(sysdate, 'dd/mm/yyyy') "DATE", INSTANCE_NAME,SUBSTR(HOST_NAME,1,INSTR(HOST_NAME,'.')-1) HOST_NAME,to_char(STARTUP_TIME, 'yyyy-mm-dd hh24:mi:ss') STARTUP_TIME, case when DATABASE_STATUS='ACTIVE' then '<span class="threshold-ok">'||DATABASE_STATUS||'</span>' when DATABASE_STATUS<>'ACTIVE' then '<span class="threshold-critical">'||DATABASE_STATUS||'</span>' end DATABASE_STATUS from  v$instance;
+REPHEADER PAGE CENTER '<h2>RMAN BACKUP REPORTS</h2>' SKIP 2
+select distinct DECODE(INCREMENTAL_LEVEL, 1, 'INCREMENTAL', 0,'FULL') "BACKUP_TYPE",b.OUTPUT_BYTES_DISPLAY,to_char(b.START_TIME, 'yyyy-mm-dd hh24:mi') start_time,to_char(b.end_time, 'yyyy-mm-dd hh24:mi') END_TIME, case when status='COMPLETED' then '<span class="threshold-ok">'||b.status||'</span>' when b.status<>'COMPLETED' then '<span class="threshold-critical">'||b.status||'</span>' end status from V$RMAN_BACKUP_JOB_DETAILS b,V$BACKUP_SET s where trunc(s.START_TIME)=trunc(b.START_TIME) and s.incremental_level is not null and b.input_type='DB INCR' and b.start_time > trunc(sysdate)
+union
+select '<font color="red"><b>NO BACKUP LAST NIGHT!!! PLEASE CHECK ASAP!!!</b></font>','<font color="red"><b>0</b></font>','<font color="red"><b>0</b></font>','<font color="red"><b>0</b></font>','<font color="red"><b>0</b></font>' FROM DUAL where not exists(select distinct DECODE(INCREMENTAL_LEVEL, 1, 'INCREMENTAL', 0,'FULL') "BACKUP_TYPE",b.OUTPUT_BYTES_DISPLAY,to_char(b.START_TIME, 'yyyy-mm-dd hh24:mi') start_time,to_char(b.end_time, 'yyyy-mm-dd hh24:mi') END_TIME, case when status='COMPLETED' then '<span class="threshold-ok">'||b.status||'</span>' when b.status<>'COMPLETED' then '<span class="threshold-critical">'||b.status||'</span>' end status from V$RMAN_BACKUP_JOB_DETAILS b,V$BACKUP_SET s where trunc(s.START_TIME)=trunc(b.START_TIME) and s.incremental_level is not null and b.input_type='DB INCR' and b.start_time > trunc(sysdate));
+SPOOL OFF
